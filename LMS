@@ -1,0 +1,497 @@
+package library.management.system;
+
+import java.io.*;
+import java.util.*;
+
+public class LibraryManagementSystem {
+
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final List<User> users = new ArrayList<>();
+    private static final List<Book> books = new ArrayList<>();
+
+    private static final String USER_FILE = "users.txt";
+    private static final String BOOK_FILE = "books.txt";
+
+    // Menu constants
+    private static final int USER_PANEL = 1;
+    private static final int BOOK_PANEL = 2;
+    private static final int EXIT = 3;
+
+    // User panel options
+    private static final int ADD_USER = 1;
+    private static final int SEARCH_USER = 2;
+    private static final int DELETE_USER = 3;
+    private static final int LIST_USERS = 4;
+    private static final int BACK_TO_MAIN = 5;
+
+    // Book panel options
+    private static final int ADD_BOOK = 1;
+    private static final int LIST_BOOKS = 2;
+    private static final int SEARCH_BOOK = 3;
+    private static final int DELETE_BOOK = 4;
+
+    public static void main(String[] args) {
+        loadUsersFromFile();
+        loadBooksFromFile();
+        text();
+        loading();
+        mainMenu();
+    }
+
+    private static void mainMenu() {
+        while (true) {
+            System.out.println("\n--- Welcome to the Library System ---");
+            System.out.println("1. Login");
+            System.out.println("2. Register");
+            System.out.println("3. Exit");
+            System.out.print("Enter your choice: ");
+            
+            try {
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // consume newline
+
+                switch (choice) {
+                    case 1 -> {
+                        if (login()) return;
+                    }
+                    case 2 -> {
+                        register();
+                        saveUsersToFile();
+                    }
+                    case 3 -> {
+                        System.out.println("Goodbye!");
+                        System.exit(0);
+                    }
+                    default -> System.out.println("Invalid input. Try again.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Please enter a number.");
+                scanner.nextLine();
+            }
+        }
+    }
+
+    private static void loading() {
+        System.out.println("\n\n\n\n\n\t\t\t\t\t\tPlease Wait...");
+        try {
+            for (int i = 10; i <= 100; i += 10) {
+                System.out.printf("\t\t\t\t\t\tLoading %d%%\r", i);
+                Thread.sleep(200);
+            }
+        } catch (InterruptedException e) {
+            System.err.println("Error during loading: " + e.getMessage());
+        }
+        System.out.flush();
+    }
+
+    private static void text() {
+        System.out.println("\n\n\n\n\n\t\t\t\t||Welcome to the Library Management System!||\n");
+        System.out.println("\t\t\t\t===========================================\n\n");
+        System.out.println("\t\t\t ||We're here to help you manage your library efficiently.||\n");
+        System.out.println("\t\t\t\t||Please login or register to get started.||\n\n\n");
+    }
+
+    private static boolean login() {
+        System.out.println("\n--- Login ---");
+
+        System.out.print("Enter User ID: ");
+        String id = scanner.nextLine().trim();
+
+        System.out.print("Enter Password: ");
+        String password = scanner.nextLine().trim();
+
+        Optional<User> user = users.stream()
+                .filter(u -> u.getId().equals(id) && u.getPassword().equals(password))
+                .findFirst();
+
+        if (user.isPresent()) {
+            System.out.println("\nLogin successful! Welcome, " + user.get().name + "!");
+            menu();
+            return true;
+        } else {
+            System.out.println("Invalid credentials. Please try again.");
+            return false;
+        }
+    }
+
+    private static void register() {
+        System.out.println("\n--- Register New User ---");
+
+        System.out.print("Enter new User ID: ");
+        String id = scanner.nextLine().trim();
+
+        if (userExists(id)) {
+            System.out.println("A user with this ID already exists. Try logging in.");
+            return;
+        }
+
+        System.out.print("Enter your name: ");
+        String name = scanner.nextLine().trim();
+
+        System.out.print("Enter your email: ");
+        String email = scanner.nextLine().trim();
+
+        System.out.print("Enter your password: ");
+        String password = scanner.nextLine().trim();
+
+        users.add(new User(id, name, email, password));
+        System.out.println("Registration successful! You can now log in.");
+    }
+
+    private static void menu() {
+        while (true) {
+            System.out.println("----------------------------------");
+            System.out.println(">>> Library Management System <<< ");
+            System.out.println("----------------------------------\n");
+            System.out.println("> 1. User Management Panel ");
+            System.out.println("> 2. Book Management Panel ");
+            System.out.println("> 3. Exit\n");
+            System.out.print("> Enter your choice: ");
+
+            try {
+                int choice = scanner.nextInt();
+                scanner.nextLine();
+
+                switch (choice) {
+                    case USER_PANEL -> userPanel();
+                    case BOOK_PANEL -> bookPanel();
+                    case EXIT -> {
+                        System.out.println("Exiting Program. Goodbye!");
+                        System.exit(0);
+                    }
+                    default -> System.out.println("\n>>> Invalid Input! Please try again <<<\n");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("\n>>> Please enter a valid number! <<<\n");
+                scanner.nextLine();
+            }
+        }
+    }
+
+    private static void userPanel() {
+        while (true) {
+            System.out.println("\n-----------------------------------------------");
+            System.out.println(">>> Library Management System - User Panel <<< ");
+            System.out.println("-----------------------------------------------\n");
+            System.out.println("> 1. Add User ");
+            System.out.println("> 2. Search User ");
+            System.out.println("> 3. Delete User ");
+            System.out.println("> 4. List All Users ");
+            System.out.println("> 5. Back to Main Menu ");
+            System.out.println("> 6. Exit Program \n");
+            System.out.print("> Enter your choice: ");
+
+            try {
+                int choice = scanner.nextInt();
+                scanner.nextLine();
+
+                switch (choice) {
+                    case ADD_USER -> {
+                        addUser();
+                        saveUsersToFile();
+                    }
+                    case SEARCH_USER -> searchUser();
+                    case DELETE_USER -> {
+                        deleteUser();
+                        saveUsersToFile();
+                    }
+                    case LIST_USERS -> listUsers();
+                    case BACK_TO_MAIN -> {
+                        return;
+                    }
+                    case 6 -> {
+                        System.out.println("Exiting Program. Goodbye!");
+                        System.exit(0);
+                    }
+                    default -> System.out.println("\n>>> Invalid Input! Please try again <<<\n");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("\n>>> Please enter a valid number! <<<\n");
+                scanner.nextLine();
+            }
+        }
+    }
+
+    private static void bookPanel() {
+        while (true) {
+            System.out.println("\n-----------------------------------------------");
+            System.out.println(">>> Library Management System - Book Panel <<< ");
+            System.out.println("-----------------------------------------------\n");
+            System.out.println("> 1. Add Book ");
+            System.out.println("> 2. List All Books ");
+            System.out.println("> 3. Search Book ");
+            System.out.println("> 4. Delete Book ");
+            System.out.println("> 5. Back to Main Menu ");
+            System.out.println("> 6. Exit Program \n");
+            System.out.print("> Enter your choice: ");
+
+            try {
+                int choice = scanner.nextInt();
+                scanner.nextLine();
+
+                switch (choice) {
+                    case ADD_BOOK -> {
+                        addBook();
+                        saveBooksToFile();
+                    }
+                    case LIST_BOOKS -> listBooks();
+                    case SEARCH_BOOK -> searchBook();
+                    case DELETE_BOOK -> {
+                        deleteBook();
+                        saveBooksToFile();
+                    }
+                    case BACK_TO_MAIN -> {
+                        return;
+                    }
+                    case 6 -> {
+                        System.out.println("Exiting Program. Goodbye!");
+                        System.exit(0);
+                    }
+                    default -> System.out.println("\n>>> Invalid Input! Please try again <<<\n");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("\n>>> Please enter a valid number! <<<\n");
+                scanner.nextLine();
+            }
+        }
+    }
+
+    private static void addUser() {
+        System.out.println("\n--- Add New User ---");
+        System.out.print("Enter user ID: ");
+        String id = scanner.nextLine().trim();
+
+        if (id.isEmpty()) {
+            System.out.println("\nError: ID cannot be empty!");
+            return;
+        }
+
+        if (userExists(id)) {
+            System.out.println("\nError: User with this ID already exists!");
+            return;
+        }
+
+        System.out.print("Enter user name: ");
+        String name = scanner.nextLine().trim();
+        if (name.isEmpty()) {
+            System.out.println("\nError: Name cannot be empty!");
+            return;
+        }
+
+        System.out.print("Enter user email: ");
+        String email = scanner.nextLine().trim();
+
+        System.out.print("Enter password: ");
+        String password = scanner.nextLine().trim();
+        if (password.isEmpty()) {
+            System.out.println("\nError: Password cannot be empty!");
+            return;
+        }
+
+        users.add(new User(id, name, email, password));
+        System.out.println("\nUser added successfully!");
+    }
+
+    private static boolean userExists(String id) {
+        return users.stream().anyMatch(user -> user.getId().equals(id));
+    }
+
+    private static void searchUser() {
+        System.out.println("\n--- Search User ---");
+        System.out.print("Enter user ID to search: ");
+        String id = scanner.nextLine().trim();
+
+        users.stream()
+                .filter(user -> user.getId().equals(id))
+                .findFirst()
+                .ifPresentOrElse(
+                        user -> System.out.println("\nUser found:\n" + user),
+                        () -> System.out.println("\nUser not found!")
+                );
+    }
+
+    private static void deleteUser() {
+        System.out.println("\n--- Delete User ---");
+        System.out.print("Enter user ID to delete: ");
+        String id = scanner.nextLine().trim();
+
+        if (users.removeIf(user -> user.getId().equals(id))) {
+            System.out.println("\nUser deleted successfully!");
+        } else {
+            System.out.println("\nUser not found!");
+        }
+    }
+
+    private static void listUsers() {
+        System.out.println("\n--- List of All Users ---");
+        if (users.isEmpty()) {
+            System.out.println("No users found!");
+        } else {
+            users.forEach(user -> System.out.println(user + "\n"));
+        }
+    }
+
+    private static void addBook() {
+        System.out.println("\n--- Add New Book ---");
+        System.out.print("Enter book ID: ");
+        String id = scanner.nextLine().trim();
+
+        if (id.isEmpty()) {
+            System.out.println("\nError: ID cannot be empty!");
+            return;
+        }
+
+        if (bookExists(id)) {
+            System.out.println("\nError: Book with this ID already exists!");
+            return;
+        }
+
+        System.out.print("Enter book title: ");
+        String title = scanner.nextLine().trim();
+        if (title.isEmpty()) {
+            System.out.println("\nError: Title cannot be empty!");
+            return;
+        }
+
+        System.out.print("Enter author name: ");
+        String author = scanner.nextLine().trim();
+
+        books.add(new Book(id, title, author));
+        System.out.println("\nBook added successfully!");
+    }
+
+    private static boolean bookExists(String id) {
+        return books.stream().anyMatch(book -> book.getId().equals(id));
+    }
+
+    private static void listBooks() {
+        System.out.println("\n--- List of All Books ---");
+        if (books.isEmpty()) {
+            System.out.println("No books found!");
+        } else {
+            books.forEach(book -> System.out.println(book + "\n"));
+        }
+    }
+
+    private static void searchBook() {
+        System.out.println("\n--- Search Book ---");
+        System.out.print("Enter book ID to search: ");
+        String id = scanner.nextLine().trim();
+
+        books.stream()
+                .filter(book -> book.getId().equals(id))
+                .findFirst()
+                .ifPresentOrElse(
+                        book -> System.out.println("\nBook found:\n" + book),
+                        () -> System.out.println("\nBook not found!")
+                );
+    }
+
+    private static void deleteBook() {
+        System.out.println("\n--- Delete Book ---");
+        System.out.print("Enter book ID to delete: ");
+        String id = scanner.nextLine().trim();
+
+        if (books.removeIf(book -> book.getId().equals(id))) {
+            System.out.println("\nBook deleted successfully!");
+        } else {
+            System.out.println("\nBook not found!");
+        }
+    }
+
+    private static void loadUsersFromFile() {
+        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 4) {
+                    users.add(new User(parts[0], parts[1], parts[2], parts[3]));
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("No previous user data found.");
+        }
+    }
+
+    private static void saveUsersToFile() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(USER_FILE))) {
+            for (User user : users) {
+                pw.println(user.getId() + "," + user.name + "," + user.email + "," + user.getPassword());
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving users: " + e.getMessage());
+        }
+    }
+
+    private static void loadBooksFromFile() {
+        try (BufferedReader br = new BufferedReader(new FileReader(BOOK_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 3) {
+                    books.add(new Book(parts[0], parts[1], parts[2]));
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("No previous book data found.");
+        }
+    }
+
+    private static void saveBooksToFile() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(BOOK_FILE))) {
+            for (Book book : books) {
+                pw.println(book.getId() + "," + book.title + "," + book.author);
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving books: " + e.getMessage());
+        }
+    }
+
+    static class User {
+        private final String id;
+        public final String name;
+        public final String email;
+        private final String password;
+
+        public User(String id, String name, String email, String password) {
+            this.id = id;
+            this.name = name;
+            this.email = email;
+            this.password = password;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("ID: %s | Name: %s | Email: %s", id, name, email);
+        }
+    }
+
+    static class Book {
+        private final String id;
+        public final String title;
+        public final String author;
+
+        public Book(String id, String title, String author) {
+            this.id = id;
+            this.title = title;
+            this.author = author;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("ID: %s | Title: %s | Author: %s", id, title, author);
+        }
+    }
+}
